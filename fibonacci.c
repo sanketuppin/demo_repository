@@ -9,6 +9,7 @@ int fib(int n){
     return(fib(n-1)+fib(n-2));
 }
 
-int add(int a,int b){
-  return (a+b);
+int sub(int a, int b){
+  return (a-b);
 }
+`
