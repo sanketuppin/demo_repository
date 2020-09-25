@@ -8,3 +8,7 @@ int fib(int n){
     printf("%d ",n);
     return(fib(n-1)+fib(n-2));
 }
+
+int add(int a,int b){
+  return (a+b);
+}
