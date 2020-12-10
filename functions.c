@@ -57,6 +57,60 @@ ast_node *createnode_four( ast_node *C1, ast_node *C2, ast_node *C3, ast_node *C
 }
 
 
+ast_node *createnode_five( ast_node *C1, ast_node *C2, ast_node *C3, ast_node *C4, ast_node *C5,enum nodetype type,char *token){
+
+	ast_node *tmp = (ast_node *)malloc(sizeof(ast_node));
+	null_assign(tmp,MAX_CHILD);
+	tmp->token = (char *)token;
+	tmp->child[0] = C1;
+	tmp->child[1] = C2;
+	tmp->child[2] = C3;
+	tmp->child[3] = C4;
+	tmp->child[4] = C5;
+	tmp->type = type;
+
+	return tmp;
+}
+
+
+ast_node *createnode_six( ast_node *C1, ast_node *C2, ast_node *C3, ast_node *C4,
+	                      ast_node *C5, ast_node *C6, enum nodetype type,char *token){
+
+	ast_node *tmp = (ast_node *)malloc(sizeof(ast_node));
+	null_assign(tmp,MAX_CHILD);
+	tmp->token = (char *)token;
+	tmp->child[0] = C1;
+	tmp->child[1] = C2;
+	tmp->child[2] = C3;
+	tmp->child[3] = C4;
+	tmp->child[4] = C5;
+	tmp->child[5] = C6;
+	tmp->type = type;
+
+	return tmp;
+}
+
+
+
+ast_node *createnode_seven( ast_node *C1, ast_node *C2, ast_node *C3, ast_node *C4, ast_node *C5,
+						   ast_node *C6, ast_node *C7, enum nodetype type,char *token){
+
+	ast_node *tmp = (ast_node *)malloc(sizeof(ast_node));
+	null_assign(tmp,MAX_CHILD);
+	tmp->token = (char *)token;
+	tmp->child[0] = C1;
+	tmp->child[1] = C2;
+	tmp->child[2] = C3;
+	tmp->child[3] = C4;
+	tmp->child[4] = C5;
+	tmp->child[5] = C6;
+	tmp->child[6] = C7;
+	tmp->type = type;
+
+	return tmp;
+}
+
+
 void dump_ast( ast_node *root ){
 
    if( root->child[0] != NULL )
