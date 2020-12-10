@@ -265,12 +265,12 @@ conditional_expression
 
 assignment_expression
 	: conditional_expression 			{ $$ = createnode_two($1,NULL,ASSGN_EXPR,(char *)"");}
-	| unary_expression assignment_operator assignment_expression
+	| unary_expression assignment_operator assignment_expression { $$ = createnode_three($1,$2,$3,ASSGN_EXPR,(char *)"");}
 	;
 
 
 assignment_operator
-	: '=' 							{ $$ = createnode_two(NULL,NULL,ASSGN,(char *)"=");}
+	: '=' 							{ $$ = createnode_two(NULL,NULL,ASSGN,(char *)" = ");}
 	| MUL_ASSIGN					{ $$ = createnode_two(NULL,NULL,ASSGN_MUL,(char *)"MUL_ASSIGN");}
 	| DIV_ASSIGN					{ $$ = createnode_two(NULL,NULL,ASSGN_DIV,(char *)"DIV_ASSIGN");}
 	| MOD_ASSIGN					{ $$ = createnode_two(NULL,NULL,ASSGN_MOD,(char *)"MOD_ASSIGN");}
@@ -291,21 +291,35 @@ expression
 													}
 	;
 
+
 constant_expression
-	: conditional_expression	/* with constraints */
+	: conditional_expression	 					{ 
+														$$ = createnode_two($1,NULL,CONST_EXPR,(char *)"");
+													 }
 	;
 
+
+
 declaration
-	: declaration_specifiers ';'
-	| declaration_specifiers init_declarator_list ';'
-	| static_assert_declaration
+	: declaration_specifiers ';' 				     { 
+														ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
+														$$ = createnode_two($1,semicolon,DECLTN,(char *)"");
+													 }	
+	| declaration_specifiers init_declarator_list ';' { 
+														ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
+														$$ = createnode_three($1,$2,semicolon,DECLTN,(char *)"");
+													 } 
+	| static_assert_declaration                      { 
+														$$ = createnode_two($1,NULL,DECLTN,(char *)"");
+													 }
 	;
+
 
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers { $$ = createnode_two($1,$2,DECL_SPEC_NT,(char *)"");}
 	| storage_class_specifier						 { $$ = createnode_two($1,NULL,DECL_SPEC_NT,(char *)"");}
 	| type_specifier declaration_specifiers			 { $$ = createnode_two($1,$2,DECL_SPEC_NT,(char *)"");}
-	| type_specifier                                 { $$ = createnode_two($1,NULL,DECL_SPEC_NT,(char *)" ");}
+	| type_specifier                                 { $$ = createnode_two($1,NULL,DECL_SPEC_NT,(char *)"");}
 	| type_qualifier declaration_specifiers 		 { $$ = createnode_two($1,$2,DECL_SPEC_NT,(char *)"");}
 	| type_qualifier                                 { $$ = createnode_two($1,NULL,DECL_SPEC_NT,(char *)"");}
 	| function_specifier declaration_specifiers      { $$ = createnode_two($1,$2,DECL_SPEC_NT,(char *)"");}
@@ -315,13 +329,21 @@ declaration_specifiers
 	;
 
 init_declarator_list
-	: init_declarator
-	| init_declarator_list ',' init_declarator
+	: init_declarator 							    { $$ = createnode_two($1,NULL,INIT_DECL_LIST,(char *)""); }	
+	| init_declarator_list ',' init_declarator 		{ 
+														ast_node *comma = createnode_two(NULL,NULL,COMMA,(char *)",");
+														$$ = createnode_three($1,comma,$3,INIT_DECL_LIST,(char *)"");
+													}
 	;
 
 init_declarator
-	: declarator '=' initializer 
-	| declarator
+	: declarator '=' initializer             { 
+												ast_node *equal = createnode_two(NULL,NULL,EQUAL,(char *)" = ");
+												$$ = createnode_three($1,equal,$3,INIT_DECL,(char *)"");
+											}
+	| declarator 							{ 
+												$$ = createnode_two($1,NULL,INIT_DECL,(char *)"");
+											}
 	;
 
 storage_class_specifier
@@ -619,11 +641,11 @@ labeled_statement
 
 compound_statement
 	: '{' '}' 						{ ast_node *open = createnode_two(NULL,NULL,OPEN_CURLPARAN,(char *)"{");
-									  ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"}");
+									  ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"} ");
 									  $$ = createnode_two(open,close,CMPD_STMT,(char *)"");
 									 }
 	| '{'  block_item_list '}'       { ast_node *open = createnode_two(NULL,NULL,OPEN_CURLPARAN,(char *)"{");
-									   ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"}");
+									   ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"} ");
 									   $$ = createnode_three(open,$2,close,CMPD_STMT,(char *)"");
 									 }
 	;
@@ -640,9 +662,9 @@ block_item
 
 
 expression_statement
-	: ';'							{ $$ = createnode_two(NULL,NULL,SEMICOLON,(char *)";");}
+	: ';'							{ $$ = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");}
 	| expression ';'        		{ 
-	 								  ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+	 								  ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 									  $$ = createnode_two($1,semicolon,NONE,(char *)"");
 									}
 	;
@@ -688,7 +710,7 @@ iteration_statement
 									ast_node *while1 = createnode_two(NULL,NULL,WHILE1,(char *)"WHILE ");
 									ast_node *open = createnode_two(NULL,NULL,OPEN_PARAN,(char *)"(");
 									ast_node *close = createnode_two(NULL,NULL,CLOSE_PARAN,(char *)")");
-									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 								    $$ = createnode_seven(do1,$2,while1,open,$5,close,semicolon,ITER_STMT,(char *)"");
 								}
 
@@ -726,27 +748,27 @@ iteration_statement
 jump_statement
 	: GOTO IDENTIFIER ';'      {
 									ast_node *goto1 = createnode_two(NULL,NULL,GOTO1,(char *)"GOTO");
-									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 									ast_node *iden = createnode_two(NULL,NULL,IDEN,(char *)"IDEN");
 								    $$ = createnode_three(goto1,iden,semicolon,JMP_STMT,(char *)"");
 								}
 	| CONTINUE ';' 				{
 									ast_node *continue1 = createnode_two(NULL,NULL,CONT,(char *)"CONTINUE");
-									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 								    $$ = createnode_two(continue1,semicolon,JMP_STMT,(char *)"");
 								}
 	| BREAK ';'					{
 									ast_node *break1 = createnode_two(NULL,NULL,BRK,(char *)"BREAK");
-									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 								    $$ = createnode_two(break1,semicolon,JMP_STMT,(char *)"");
 								}
 	| RETURN ';'				{
 									ast_node *return1 = createnode_two(NULL,NULL,RET,(char *)"RETURN ");
-									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+									ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 								    $$ = createnode_two(return1,semicolon,JMP_STMT,(char *)"");
 								}
 	| RETURN expression ';'     { ast_node *return1 = createnode_two(NULL,NULL,RET,(char *)"RETURN ");
-								  ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)";");
+								  ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
 								  $$ = createnode_three(return1,$2,semicolon,JMP_STMT,(char *)"");
 								}
 	;
