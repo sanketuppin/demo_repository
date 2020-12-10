@@ -520,11 +520,12 @@ type_qualifier_list
 
 
 parameter_type_list
-	: parameter_list ',' ELLIPSIS 				{ ast_node * comma = createnode_two(NULL,NULL,COMMA,(char *)",");
-									ast_node * ellipsis = createnode_two(NULL,NULL,ELLIPS,(char *)"ELLIPSIS");
-									$$ = createnode_three($1,comma,ellipsis,PARAM_TYPE_LIST,(char *)"");
-												}
-	| parameter_list 							{$$ = createnode_two($1,NULL,PARAM_TYPE_LIST,(char *)"");}
+	: parameter_list ',' ELLIPSIS 	{ 	
+										ast_node * comma = createnode_two(NULL,NULL,COMMA,(char *)",");
+										ast_node * ellipsis = createnode_two(NULL,NULL,ELLIPS,(char *)"ELLIPSIS");
+										$$ = createnode_three($1,comma,ellipsis,PARAM_TYPE_LIST,(char *)"");
+									}
+	| parameter_list 				{$$ = createnode_two($1,NULL,PARAM_TYPE_LIST,(char *)"");}
 	;
 
 parameter_list
@@ -779,8 +780,11 @@ translation_unit
 	;
 
 external_declaration
-	: function_definition
-	| declaration
+	: function_definition          				{ $$ = createnode_two($1,NULL,EXT_DECL,(char *)"");}        
+	| declaration 							    { ast_node *decl = createnode_two($1,NULL,EXT_DECL,(char *)"");
+												  dump_ast(decl);
+												  printf("\n");
+												}
 	;
 
 function_definition
@@ -798,8 +802,14 @@ function_definition
 
 
 declaration_list
-	: declaration 								{ $$ = createnode_two($1,NULL,DECL_LIST,(char *)"");}
-	| declaration_list declaration 				{ $$ = createnode_two($1,$2,DECL_LIST,(char *)"");}
+	: declaration 								{ ast_node *decl_list = createnode_two($1,NULL,DECL_LIST,(char *)"");
+												  dump_ast(decl_list);
+												  printf("\n");
+												}
+	| declaration_list declaration 				{ ast_node *decl_list = createnode_two($1,$2,DECL_LIST,(char *)"");
+												  dump_ast(decl_list);
+												  printf("\n");
+												}
 	;
 
 %%
