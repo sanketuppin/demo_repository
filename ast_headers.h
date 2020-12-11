@@ -1,6 +1,10 @@
 
 #define MAX_CHILD 7
 
+#define YYSTYPE ast_node *
+#define YYSTYPE_IS_DECLARED 1
+
+
 enum nodetype {IDEN,ICONST,FUNCDEF,NONE,OPEN_PARAN,CLOSE_PARAN,RET,SEMICOLON,ADDOP,SUBOP,COMMA,VOID1,OPEN_SQPARAN,
 			   CLOSE_SQPARAN,BRK,CONT,GOTO1,OPEN_CURLPARAN,CLOSE_CURLPARAN,DECL_SPEC_NT,TYPE_SPEC_T,TYPE_SPEC_NT,
 			   TYPE_DEFNAME,STRG_CLASS_T,TYPE_QUAL_T,FUNC_SPEC_T,DECL,DIRECT_DECL,PARAM_DECL,PARAM_LIST,
@@ -12,6 +16,8 @@ enum nodetype {IDEN,ICONST,FUNCDEF,NONE,OPEN_PARAN,CLOSE_PARAN,RET,SEMICOLON,ADD
 			  TYPE_QUAL_LIST,ELLIPS,EXPR,IDEN_LIST,JMP_STMT,DECL_LIST,ITER_STMT,SELEC_STMT,IF1,ELSE1,SWITCH1,DO1,FOR1,WHILE1,
 			  INIT_DECL_LIST,DECLTN,CONST_EXPR,INIT_DECL,EQUAL,EXT_DECL};
 
+
+
 typedef struct ast_node {
 
     char *token;
@@ -21,9 +27,13 @@ typedef struct ast_node {
 } ast_node;
 
 
-#define YYSTYPE ast_node *
-#define YYSTYPE_IS_DECLARED 1
 
+typedef struct symtable {
 
+  	char *token_value;
+  	enum nodetype token_type;             
+  	struct symtable *next;
+
+} symtable;
 
 

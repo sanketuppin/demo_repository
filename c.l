@@ -27,6 +27,7 @@ WS  [ \t\v\n\f]
 #include "ast_headers.h"
 #include "c.tab.hpp"
 
+
 extern void yyerror(const char *);  /* prints grammar violation message */
 
 extern int sym_type(const char *);  /* returns type from symbol table */

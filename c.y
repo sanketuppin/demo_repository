@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 #include "ast_headers.h"
 #include "functions.c"
 using namespace std;
@@ -12,11 +13,19 @@ using namespace std;
 extern "C" int yylex();
 int yyparse();
 extern "C" FILE *yyin;
+extern char yytext[];
 
+symtable *HEAD = (symtable *)NULL;
+
+int check_scope( char *symb_name );
+void sym_add ( char *symb_name, enum nodetype type );
+int check_symbol( char *symb_name );
+symtable *add_symbol( char *symb_name, enum nodetype symb_type );
+void exit_scope();
 
 %}
 
-%token	IDENTIFIER I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
+%token  IDENTIFIER I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
 %token	PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token	AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token	SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -30,12 +39,14 @@ extern "C" FILE *yyin;
 %token	CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 
-
 %start translation_unit
 %%
 
 primary_expression
-	: IDENTIFIER 						{ $$ = createnode_two(NULL,NULL,IDEN,(char *)"ID");} 
+	: IDENTIFIER 						{ 
+											 $$ = createnode_two(NULL,NULL,IDEN,(char *)"ID");
+	                                      // sym_add((char *)yytext,IDEN);
+	                                    } 
 	| constant 							{ $$ = createnode_two($1,NULL,PRIM_EXP,(char *)"");}
 	| string 							{ $$ = createnode_two($1,NULL,PRIM_EXP,(char *)"");}
 	| '(' expression ')'  				{ ast_node *openbrace = createnode_two(NULL,NULL,OPEN_PARAN,(char *)"(");
@@ -45,10 +56,20 @@ primary_expression
 	| generic_selection 				{ $$ = createnode_two($1,NULL,PRIM_EXP,(char *)"");}
 	;
 
+
+
 constant
-	: I_CONSTANT						{ $$ = createnode_two(NULL,NULL,ICONST,(char *)"I_CONSTANT");}
-	| F_CONSTANT 						{ $$ = createnode_two(NULL,NULL,FCONST,(char *)"F_CONSTANT");}
-	| ENUMERATION_CONSTANT	 			{ $$ = createnode_two(NULL,NULL,ENUM_CONST,(char *)"ENUM_CONSTANT");}
+	: I_CONSTANT						{ $$ = createnode_two(NULL,NULL,ICONST,(char *)"I_CONST");
+										  // sym_add((char *)yytext,ICONST);
+	         							} 
+	| F_CONSTANT 						{ $$ = createnode_two(NULL,NULL,FCONST,(char *)"F_CONSTANT");
+										  // sym_add((char *)yytext,FCONST);
+										}
+	| ENUMERATION_CONSTANT	 			{ $$ = createnode_two(NULL,NULL,ENUM_CONST,(char *)"ENUM_CONSTANT");
+										  // sym_add((char *)yytext,ENUM_CONST);
+										}
+
+
 
 
 enumeration_constant		/* before it has been defined as such */
@@ -56,8 +77,12 @@ enumeration_constant		/* before it has been defined as such */
 	;
 
 string
-	: STRING_LITERAL 					{ $$ = createnode_two(NULL,NULL,STRING1,(char *)"STRING_LITERAL");}
-	| FUNC_NAME 						{ $$ = createnode_two(NULL,NULL,FUNCNAME,(char *)"STRING_LITERAL");}
+	: STRING_LITERAL 					{ $$ = createnode_two(NULL,NULL,STRING1,(char *)"STRING_LITERAL");
+	                                      // sym_add((char *)yytext,STRING1);
+										}
+	| FUNC_NAME 						{ $$ = createnode_two(NULL,NULL,FUNCNAME,(char *)"STRING_LITERAL");
+										  // sym_add((char *)yytext,FUNCNAME);
+										}
 	;
 
 generic_selection
@@ -77,11 +102,11 @@ generic_association
 postfix_expression
 	: primary_expression							{ $$ = createnode_two($1,NULL,POSTFIX_EXP,(char *)"");}
 
-	| postfix_expression '[' expression ']'         { ast_node *open_sqbrace = 
-														createnode_two(NULL,NULL,OPEN_SQPARAN,(char *)"[");
-											  	  	  ast_node *close_sqbrace = 
-											  	  	  	createnode_two(NULL,NULL,CLOSE_SQPARAN,(char *)"]");
-									$$ = createnode_four($1,open_sqbrace,$3,close_sqbrace,POSTFIX_EXP,(char *)"");
+	| postfix_expression '[' expression ']'         { 
+
+								ast_node *open_sqbrace = createnode_two(NULL,NULL,OPEN_SQPARAN,(char *)"[");
+								ast_node *close_sqbrace = createnode_two(NULL,NULL,CLOSE_SQPARAN,(char *)"]");
+								$$ = createnode_four($1,open_sqbrace,$3,close_sqbrace,POSTFIX_EXP,(char *)"");
 													}
 
 	| postfix_expression '(' ')'		{ ast_node *open_brace =
@@ -99,7 +124,7 @@ postfix_expression
 	| postfix_expression PTR_OP IDENTIFIER
 	| postfix_expression INC_OP
 	| postfix_expression DEC_OP
-	| '(' type_name ')' '{' initializer_list '}'
+	| '(' type_name ')' '{' initializer_list '}' 
 	| '(' type_name ')' '{' initializer_list ',' '}'
 	;
 
@@ -301,13 +326,13 @@ constant_expression
 
 
 declaration
-	: declaration_specifiers ';' 				     { 
-														ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
-														$$ = createnode_two($1,semicolon,DECLTN,(char *)"");
-													 }	
+	: declaration_specifiers ';' 			{ 
+												ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
+												$$ = createnode_two($1,semicolon,DECLTN,(char *)"");
+											}	
 	| declaration_specifiers init_declarator_list ';' { 
-														ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
-														$$ = createnode_three($1,$2,semicolon,DECLTN,(char *)"");
+											ast_node *semicolon = createnode_two(NULL,NULL,SEMICOLON,(char *)" ;");
+											$$ = createnode_three($1,$2,semicolon,DECLTN,(char *)"");
 													 } 
 	| static_assert_declaration                      { 
 														$$ = createnode_two($1,NULL,DECLTN,(char *)"");
@@ -463,7 +488,10 @@ declarator
 
 
 direct_declarator
-	: IDENTIFIER 							{ $$ = createnode_two(NULL,NULL,IDEN,(char *)"ID"); }
+	: IDENTIFIER 							{ 	 												 
+												 $$ = createnode_two(NULL,NULL,IDEN,(char *)"ID");
+												 //sym_add((char *)yytext,IDEN);
+											}
 	| '(' declarator ')'					{  
 							ast_node *open = createnode_two(NULL,NULL,OPEN_PARAN,(char *)"(");
 							ast_node *close = createnode_two(NULL,NULL,CLOSE_PARAN,(char *)")");
@@ -642,10 +670,12 @@ labeled_statement
 
 compound_statement
 	: '{' '}' 						{ ast_node *open = createnode_two(NULL,NULL,OPEN_CURLPARAN,(char *)"{");
+									  // sym_add((char *)yytext,OPEN_CURLPARAN);
 									  ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"} ");
 									  $$ = createnode_two(open,close,CMPD_STMT,(char *)"");
 									 }
 	| '{'  block_item_list '}'       { ast_node *open = createnode_two(NULL,NULL,OPEN_CURLPARAN,(char *)"{");
+										// sym_add((char *)yytext,OPEN_CURLPARAN);
 									   ast_node *close = createnode_two(NULL,NULL,CLOSE_CURLPARAN,(char *)"} ");
 									   $$ = createnode_three(open,$2,close,CMPD_STMT,(char *)"");
 									 }
@@ -815,4 +845,122 @@ declaration_list
 %%
 
 
+//nodes are added to the end of LL
+symtable *add_symbol( char *symb_name, enum nodetype symb_type ) {
 
+	symtable *tmp = (symtable *)malloc(sizeof(symtable));
+	if( tmp == NULL ){
+		printf("No memory available for symbol addition\n");
+		exit(0);
+	}
+
+  	tmp->token_value = (char *)malloc(strlen(symb_name) + 1 );
+  	strcpy(tmp->token_value,symb_name);
+
+  	tmp->next = HEAD;
+  	HEAD = tmp;
+
+  	return tmp;
+
+}
+
+
+int check_symbol( char *symb_name ) {
+
+  	symtable *tmp ;
+  	int count = 0;
+
+  	for( tmp = HEAD;  (tmp != (symtable *)NULL) && ( tmp->token_value != "{" ) ;  tmp = tmp->next ){
+
+    	if (strcmp(tmp->token_value,symb_name) == 0){
+    
+    		count++;
+
+    	}
+    }
+   
+    if( count >= 2){
+
+    	// more than one declaration found in the current scope
+    	return -1;
+    
+    } 
+    else if( count == 1 ){
+
+    	// one declaration found in the current scope
+    	return 1;
+    
+    }
+    else {
+    	
+    	for( ;  (tmp != (symtable *)NULL) ;  tmp = tmp->next ){
+
+    		if (strcmp(tmp->token_value,symb_name) == 0){
+    			
+    			// // one declaration found in the outer scope
+    			return 1;
+
+    		}
+    	}
+    }
+    
+    // no declarations found in the complete stack
+	return 0;
+
+}
+
+
+int check_scope( char *symb_name ){
+
+  	symtable *tmp ;
+  	int count = 0;
+
+  	for( tmp = HEAD; ( tmp->token_value != "{" ) ;  tmp = tmp->next ){
+
+    	if (strcmp(tmp->token_value,symb_name) == 0){
+    		
+    		// one declaration found in the current scope
+			return 1;
+
+    	}
+    }
+   
+   	// no declarations found in current scope
+    return 0;
+
+}
+
+
+void sym_add ( char *symb_name, enum nodetype type ){
+	
+	int count = check_scope(symb_name);
+
+   	if (count == 0){
+
+        add_symbol(symb_name,type);
+   	
+   	}
+    else { 
+    	
+        printf("%s is defined previously\n", symb_name );
+        exit(0);
+    
+    }
+
+}
+
+void exit_scope(){
+	
+	symtable *tmp,*ptr = HEAD;
+
+	while( tmp->token_value != "{" ){
+
+		tmp = tmp->next;
+		free(ptr);
+		ptr = tmp;
+
+	}
+
+	HEAD = tmp;
+
+}
